@@ -1,10 +1,8 @@
-# app.py
 import os
 import re
 import gradio as gr
-
-# Pick backend based on environment
-USE_OLLAMA = os.getenv("USE_OLLAMA", "false").lower() == "true"
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 MODE_LABELS = {
     "🤝": "Agree & move on",
@@ -16,54 +14,45 @@ MODE_LABELS = {
 
 SYSTEM_PROMPT = """You help a family caregiver find words that work in a hard moment with someone they love who has memory loss. Given a phrase the person would say, a situation, and context about them, produce short lines the caregiver can say out loud. Each line should feel like something she would accept. Tag each line with a mode: 🤝 agree-and-move, 🙂 lighten, 🫱 redirect, 🛑 firm-but-kind, or 🎯 distract. Produce 3 to 5 lines. Skip modes that don't fit. Output only the lines, one per line, mode emoji first."""
 
-# ---- Backend setup ----
+# ---- Load model from HF ----
 
-if USE_OLLAMA:
-    import httpx
+MODEL_REPO = "michi883/memory-moment-gemma4-e2b-merged-v3"
 
-    def call_model(user_prompt: str) -> str:
-        response = httpx.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": "memory-moment",
-                "prompt": user_prompt,
-                "system": SYSTEM_PROMPT,
-                "stream": False,
-                "options": {"temperature": 0.8, "top_p": 0.9},
-            },
-            timeout=120,
-        )
-        return response.json()["response"]
+print(f"Loading tokenizer from {MODEL_REPO}...")
+tokenizer = AutoTokenizer.from_pretrained(MODEL_REPO)
 
-else:
-    from llama_cpp import Llama
-    from huggingface_hub import hf_hub_download
+print(f"Loading model from {MODEL_REPO} in fp16...")
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL_REPO,
+    torch_dtype=torch.float16,
+    device_map="cpu",
+    low_cpu_mem_usage=True,
+)
+model.eval()
+print("Model loaded.")
 
-    print("Downloading GGUF from Hugging Face...")
-    model_path = hf_hub_download(
-        repo_id="michi883/memory-moment-gemma4-e2b-gguf",
-        filename="memory-moment-v3-Q4_K_M.gguf",
+
+def call_model(user_prompt: str) -> str:
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": user_prompt},
+    ]
+    inputs = tokenizer.apply_chat_template(
+        messages,
+        tokenize=True,
+        add_generation_prompt=True,
+        return_tensors="pt",
     )
-    print(f"Loading model from {model_path}...")
-    llm = Llama(
-        model_path=model_path,
-        n_ctx=2048,
-        n_threads=4,
-        verbose=False,
-    )
-    print("Model loaded.")
-
-    def call_model(user_prompt: str) -> str:
-        response = llm.create_chat_completion(
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
+    with torch.no_grad():
+        outputs = model.generate(
+            inputs,
+            max_new_tokens=300,
             temperature=0.8,
             top_p=0.9,
-            max_tokens=300,
+            do_sample=True,
+            pad_token_id=tokenizer.eos_token_id,
         )
-        return response["choices"][0]["message"]["content"]
+    return tokenizer.decode(outputs[0][inputs.shape[1]:], skip_special_tokens=True)
 
 
 # ---- Profile + anchor selection ----
@@ -81,12 +70,14 @@ PROFILE = {
     ],
 }
 
+
 def pick_anchor(situation: str) -> str:
     s = situation.lower()
     for phrase in PROFILE["phrases"]:
         if any(tag in s for tag in phrase["tags"]):
             return phrase["text"]
     return PROFILE["phrases"][0]["text"]
+
 
 def build_context(situation: str) -> str:
     s = situation.lower()
@@ -110,7 +101,6 @@ def generate_lines(situation: str) -> str:
 
     raw = call_model(user_prompt)
 
-    # Parse into markdown cards
     cards = []
     for line in raw.strip().split("\n"):
         line = line.strip()
@@ -138,8 +128,8 @@ demo = gr.Interface(
     ),
     outputs=gr.Markdown(label="Things you could say"),
     title="Memory Moment",
-    description="Words for a family caregiver, in the moment. Model: [memory-moment-gemma4-e2b](https://huggingface.co/michi883/memory-moment-gemma4-e2b-gguf) (fine-tuned Gemma 4).",
-    flagging_mode="never",  # This is the new parameter name in Gradio 5.x
+    description="Words for a family caregiver, in the moment. Model: [memory-moment-gemma4-e2b](https://huggingface.co/michi883/memory-moment-gemma4-e2b-merged-v3) (fine-tuned Gemma 4).",
+    flagging_mode="never",
 )
 
 if __name__ == "__main__":
