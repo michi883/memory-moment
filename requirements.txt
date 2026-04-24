@@ -1,7 +1,7 @@
 gradio==5.0.0
-huggingface-hub>=0.30.0
+huggingface-hub>=0.30.0,<1.0
 httpx==0.27.2
-transformers>=4.55.0
+transformers>=4.55.0,<4.60.0
 accelerate==1.1.0
 torch==2.4.0
 sentencepiece==0.2.0
