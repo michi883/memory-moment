@@ -19,7 +19,7 @@ SYSTEM_PROMPT = """You help a family caregiver find words that work in a hard mo
 MODEL_REPO = "michi883/memory-moment-gemma4-e2b-merged-v3"
 
 print(f"Loading tokenizer from {MODEL_REPO}...")
-tokenizer = AutoTokenizer.from_pretrained(MODEL_REPO)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_REPO, use_fast=False)
 
 print(f"Loading model from {MODEL_REPO} in fp16...")
 model = AutoModelForCausalLM.from_pretrained(
