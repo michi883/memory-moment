@@ -1,0 +1,24 @@
+# Ollama Modelfile for Memory Moment
+# Build: ollama create memory-moment -f Modelfile
+# Test:  ollama run memory-moment
+
+FROM /home/jupyter/memory-moment-v5-Q4_K_M.gguf
+
+# v4 system prompt — same as the one baked into mvp_train.jsonl
+SYSTEM """You help a family caregiver find words that work in a hard moment with someone they love who has memory loss. The caregiver provides context about the loved one — their relationship, voice, things they often say, what calms them, what to avoid — followed by a situation. Produce 3 to 5 short lines the caregiver can say out loud, each tagged with a mode: 🤝 agree-and-move, 🙂 lighten, 🫱 redirect, 🛑 firm-but-kind, or 🎯 distract. Use phrases from "often says" when they fit naturally, or paraphrase the loved one's voice when they don't. Skip modes that don't fit. Output only the lines."""
+
+# Sampling parameters
+# - temperature 0.75: enough variation across re-rolls without going off-voice
+# - top_p 0.92:       guards against low-prob ramble
+# - top_k 40:         standard
+# - repeat_penalty 1.1: helps when the model echoes the anchor phrase too literally
+# - num_predict 220:  3-5 short lines fit in ~200 tokens; small headroom for emoji
+# - num_ctx 2048:     plenty for the ~120-token Context + a short situation
+PARAMETER temperature 0.75
+PARAMETER top_p 0.92
+PARAMETER top_k 40
+PARAMETER repeat_penalty 1.1
+PARAMETER num_predict 220
+PARAMETER num_ctx 2048
+PARAMETER stop "<end_of_turn>"
+PARAMETER stop "<eos>"
