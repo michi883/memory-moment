@@ -4,7 +4,7 @@
 
 A fine-tuned Gemma 4 E2B model that helps family caregivers find something to say when a loved one with memory loss is upset, confused, or distant. The caregiver types a short situation; the model returns 3–5 short, mode-tagged lines they can actually say out loud — in a voice built from their loved one's own phrases, history, and the things that calm them.
 
-[Live demo](https://huggingface.co/spaces/michi883/memory-moment-demo) · [Video (3 min)](https://www.youtube.com/watch?v=yrL78gslbco) · [Kaggle writeup](https://www.kaggle.com/competitions/gemma-4-good-hackathon) · [Quantized model (GGUF)](https://huggingface.co/michi883/memory-moment-v5-gemma4-e2b-gguf) · [Training notebook (Colab)](https://colab.research.google.com/drive/191xBczdNB93CE3nFvK2wlhAXcS_676Kb)
+[Live demo](https://huggingface.co/spaces/michi883/memory-moment-demo) · [Video (3 min)](https://www.youtube.com/watch?v=yrL78gslbco) · [Kaggle writeup](https://www.kaggle.com/competitions/gemma-4-good-hackathon/writeups/memory-moment-finding-the-right-words-in-dementia) · [Quantized model (GGUF)](https://huggingface.co/michi883/memory-moment-v5-gemma4-e2b-gguf) · [Training notebook (Colab)](https://colab.research.google.com/drive/191xBczdNB93CE3nFvK2wlhAXcS_676Kb)
 
 Built for the [Gemma 4 Good Hackathon](https://kaggle.com/competitions/gemma-4-good-hackathon) — Impact Track: Health & Sciences. Special Technology Track: Unsloth.
 
